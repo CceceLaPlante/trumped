@@ -5,9 +5,9 @@ import tensorflow as tf
 class Table () : 
     
     def __init__ (self) :
-        self.table = {" " : 0}
+        self.table = {"<pad>" : 0}
         self.vocab_size = 1
-        self.reverse_table = {0:" "}
+        self.reverse_table = {0:"<pad>"}
         
     def get_and_add (self, character) :
         if character not in self.table :
@@ -53,7 +53,7 @@ def preprocessing (text, table) :
             + majuscules 
             
         finaly we change our character to numbers
-        
+
     """
     
     new_text = ""
@@ -90,7 +90,7 @@ def padding (vector, max_size) :
     if len(vector) > max_size :
         return vector[:max_size]
     if len(vector) < max_size :
-        return vector + [0]*(max_size-len(vector))
+        return  [0]*(max_size-len(vector))+vector
     
 def getdataset (token_type = "character", max_size=280) :
     """
