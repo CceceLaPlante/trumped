@@ -1,4 +1,4 @@
-from blocs import TransformerBlock, TokenAndPositionEmbedding
+from .blocs import TransformerBlock, TokenAndPositionEmbedding
 import tensorflow as tf
 from tensorflow.keras import layers
 

@@ -5,9 +5,9 @@ import tensorflow as tf
 class Table () : 
     
     def __init__ (self) :
-        self.table = {"<pad>" : 0}
+        self.table = {"<pad>" : 0, "<mask>" : 1}
         self.vocab_size = 1
-        self.reverse_table = {0:"<pad>"}
+        self.reverse_table = {0:"<pad>",1:"<mask>"}
         
     def get_and_add (self, character) :
         if character not in self.table :
@@ -17,7 +17,6 @@ class Table () :
             self.reverse_table[self.vocab_size - 1] = character
             
             return self.vocab_size - 1
-            
 
         else :
             return self.table[character]
@@ -107,7 +106,7 @@ def getdataset (token_type = "character", max_size=280) :
             padded_vec = padding(vec,max_size)
             if padded_vec == None :
                 continue
-            tensor = tf.convert_to_tensor(padded_vec)
+            tensor =padded_vec
             data.append(tensor)
             
     return data,table
