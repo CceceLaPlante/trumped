@@ -89,7 +89,7 @@ def padding (vector, max_size) :
     if len(vector) > max_size :
         return vector[:max_size]
     if len(vector) < max_size :
-        return  [0]*(max_size-len(vector))+vector
+        return  vector+[0]*(max_size-len(vector))
     
 def getdataset (token_type = "character", max_size=280) :
     """
