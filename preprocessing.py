@@ -5,9 +5,9 @@ import tensorflow as tf
 class Table () : 
     
     def __init__ (self) :
-        self.table = {"<pad>" : 0, "<mask>" : 1}
-        self.vocab_size = 1
-        self.reverse_table = {0:"<pad>",1:"<mask>"}
+        self.table = {"<pad>" : 0, "<eos>" : 1, "<sos>" : 2}
+        self.vocab_size = 3
+        self.reverse_table = {0:"<pad>",1:"<eos>", 2:"<sos"}
         
     def get_and_add (self, character) :
         if character not in self.table :
@@ -89,7 +89,7 @@ def padding (vector, max_size) :
     if len(vector) > max_size :
         return vector[:max_size]
     if len(vector) < max_size :
-        return  vector+[0]*(max_size-len(vector))
+        return  [2]+vector+[1]+[0]*(max_size-len(vector)-2) # on ajoute un <sos> et un <eos> à la fin du tweet
     
 def getdataset (token_type = "character", max_size=280) :
     """
@@ -107,7 +107,33 @@ def getdataset (token_type = "character", max_size=280) :
             if padded_vec == None :
                 continue
             tensor =padded_vec
-            data.append(tensor)
+            data.append(
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        )
             
     return data,table
             
