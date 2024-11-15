@@ -17,7 +17,6 @@ class Net (layers.Layer) :
     def __call__(self, x) :
         x = self.embeddings(x)
         x = self.att(x)
-        x = self.proj(x)
         x = self.post_processing(x)
         return self.softmax(x)
     
