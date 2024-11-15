@@ -107,33 +107,7 @@ def getdataset (token_type = "character", max_size=280) :
             if padded_vec == None :
                 continue
             tensor =padded_vec
-            data.append(
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        )
+            data.append(tensor)
             
     return data,table
             
