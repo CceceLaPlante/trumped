@@ -11,7 +11,6 @@ class Net (layers.Layer) :
         super().__init__()
         self.embeddings = TokenAndPositionEmbedding(maxlen, vocab_size, embed_dim)
         self.att = TransformerBlock(embed_dim, num_heads)
-        self.proj = layers.GlobalAveragePooling1D()
         self.post_processing = layers.Dense(20,activation="relu")
         self.softmax = layers.Dense(vocab_size,activation="softmax")
         
