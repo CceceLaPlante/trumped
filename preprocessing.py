@@ -23,6 +23,8 @@ class Table () :
         
     def number_to_character (self, number) :
         return self.reverse_table[int(number)]
+    def character_to_number(self, char) : 
+        return self.table[char]
         
 
 def load_data () :
@@ -40,7 +42,7 @@ def load_data () :
 def number_to_character (number,table) :
     return table.number_to_character(number)
 
-def character_to_number (char,table) :
+def character_to_number_add (char,table) :
     return table.get_and_add(char)
     
 
@@ -71,13 +73,13 @@ def preprocessing (text, table) :
         
         if char.isupper() :
             new_text += char.lower()
-            vector.append(character_to_number(char.lower(),table))
+            vector.append(character_to_number_add(char.lower(),table))
             idx += 1
 
         
         else : 
             new_text += char
-            vector.append(character_to_number(char,table))
+            vector.append(character_to_number_add(char,table))
             idx += 1
 
             
@@ -91,7 +93,7 @@ def padding (vector, max_size) :
 
     if len(vector) < max_size :
         return  [2]+vector+[1]+[0]*(max_size-len(vector)-2) # on ajoute un <sos> et un <eos> à la fin du tweet
-    
+        
 def getdataset (token_type = "character", max_size=280) :
     """
         token_type : str, type de tokenisation à utiliser; character ou word, ou token
