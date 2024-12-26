@@ -30,7 +30,7 @@ class TransformerBlock(layers.Layer):
         x = self.att(inputs,inputs, use_causal_mask=True)
         y = self.layernorm1(x+ inputs)
         z = self.ffn(y)
-        x = self.layernorm2(z+y)
+        x = self.layernorm2(z+y) #skip connection
         return x
 
 class TokenAndPositionEmbedding(layers.Layer):
