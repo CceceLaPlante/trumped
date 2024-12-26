@@ -13,9 +13,15 @@ class Net (layers.Layer) :
         self.embeddings = TokenAndPositionEmbedding(maxlen, vocab_size, embed_dim)
         
         self.attention_blocks = [TransformerBlock(embed_dim, num_heads) for _ in range(num_blocs)]
-        self.post_processing = layers.Dense(20,activation="relu")
+        self.post_processing = layers.Dense(256,activation="relu")
         
         self.softmax = layers.Dense(vocab_size,activation="softmax")
+        #dropout
+        self.dropout = layers.Dropout
+        self.dropout_rate = 0.1
+        self.dropout = self.dropout(self.dropout_rate)
+        
+        
         
     def __call__(self, x) :
         x = self.embeddings(x)
@@ -23,6 +29,8 @@ class Net (layers.Layer) :
         for block in self.attention_blocks :
             x = block(x)
         
+        x = self.dropout(x)
+
         x = self.post_processing(x)
         return self.softmax(x)
     
