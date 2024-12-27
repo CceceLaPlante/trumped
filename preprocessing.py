@@ -137,17 +137,40 @@ def getdataset () :
     return data,table, max_size
 
 class Dataloader () : 
-    def __init__ (self,dataset, table) : 
+    def __init__ (self,dataset, table,MAX_LEN,batch_size) : 
         self.dataset = dataset
         self.table = table
-        
-    def get_generator (self) : 
-        for tweet in self.dataset : 
-            for idx, word in enumerate(tweet) : 
-                truncked_tweet = tweet[:idx]
-                yield truncked_tweet, word
-                
+        self.MAX_LEN = MAX_LEN
+        self.batch_size = batch_size    
 
+    def create_batches(self):
+        batches = []
+        batch_x = []
+        batch_y = []
+
+        for tweet in self.dataset:
+            for idx, word in enumerate(tweet):
+                truncked_tweet = tweet[:idx] + (self.MAX_LEN - idx) * [0]
+
+                # Include padding tokens in the batches
+                batch_x.append(truncked_tweet)
+                batch_y.append([word])
+
+                if len(batch_x) == self.batch_size:
+                    batches.append((batch_x, batch_y))
+                    batch_x = []
+                    batch_y = []
+
+        if batch_x:
+            batches.append((batch_x, batch_y))
+
+        return batches
+
+    def get_generator(self):
+        batches = self.create_batches()
+        for batch_x, batch_y in batches:
+            yield tf.convert_to_tensor(batch_x, dtype=tf.int32), tf.convert_to_tensor(batch_y, dtype=tf.int32)
+                    
             
         
 def to_text (vector,table) :
@@ -159,9 +182,16 @@ if __name__ == "__main__" :
     print(to_text(dataset[0],table))
     print(len(dataset))
     print("_____________")
-    dl = Dataloader(dataset,table)
+    
+    max_len = 0
+    for tweet in dataset :
+        if len(tweet) > max_len :
+            max_len = len(tweet)
+    print(max_len)
+    
+    
+    dl = Dataloader(dataset,table,max_len,1)
     gen = dl.get_generator()
     for i in range(20) :
         tt, w = next(gen)
-        print(to_text(tt,table),"||",to_text([w],table))
-        
+        print(tt,"||", w)
