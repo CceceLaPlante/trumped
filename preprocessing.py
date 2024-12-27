@@ -135,13 +135,33 @@ def getdataset () :
             
     print("shocolat")
     return data,table, max_size
+
+class Dataloader () : 
+    def __init__ (self,dataset, table) : 
+        self.dataset = dataset
+        self.table = table
+        
+    def get_generator (self) : 
+        for tweet in self.dataset : 
+            for idx, word in enumerate(tweet) : 
+                truncked_tweet = tweet[:idx]
+                yield truncked_tweet, word
+                
+
             
         
 def to_text (vector,table) :
-    return "".join([number_to_character(number,table) for number in vector])
+    return " ".join([number_to_character(number,table) for number in vector])
         
 if __name__ == "__main__" :
-    dataset,table = getdataset()
+    dataset,table,ms = getdataset()
     print("______________________")
-    print(to_text(dataset[1],table))
+    print(to_text(dataset[0],table))
     print(len(dataset))
+    print("_____________")
+    dl = Dataloader(dataset,table)
+    gen = dl.get_generator()
+    for i in range(20) :
+        tt, w = next(gen)
+        print(to_text(tt,table),"||",to_text([w],table))
+        
