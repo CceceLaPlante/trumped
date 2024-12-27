@@ -1,5 +1,6 @@
 import csv
 import tensorflow as tf
+import numpy as np
 
 class Table () : 
     
@@ -109,39 +110,44 @@ def padding (vector, max_size) :
     if len(vector) < max_size :
         return  [2]+vector+[1]+[0]*(max_size-len(vector)-2) # on ajoute un <sos> et un <eos> à la fin du tweet
     
-def getdataset () :
-    """
-        token_type : str, type de tokenisation à utiliser; character ou word, ou token
-    """
-    # dans un premier temps on implémente que character 
+def getdataset(validation_split=0.2):
     tweets = load_data()
     data = []
     table = Table()
     max_size = 0
     
-    for tweet in tweets :
-        vec = preprocessing(tweet,table)
-        if len(vec) > max_size :
+    for tweet in tweets:
+        vec = preprocessing(tweet, table)
+        if len(vec) > max_size:
             max_size = len(vec)
-    max_size = max_size + 2 # on ajoute un <sos> et un <eos> à la fin du tweet
+    max_size = max_size + 2  # Add <sos> and <eos> to the end of the tweet
     
-    for idx, tweet in enumerate(tweets) :
-        vec = preprocessing(tweet,table)
-        padded_vec = padding(vec,max_size)
-        if padded_vec == None :
+    for idx, tweet in enumerate(tweets):
+        vec = preprocessing(tweet, table)
+        padded_vec = padding(vec, max_size)
+        if padded_vec is None:
             continue
-        tensor =padded_vec
+        tensor = padded_vec
         data.append(tensor)
-            
-    print("shocolat")
-    return data,table, max_size
+    
+    # Normalize data
+    data = np.array(data)
+    data = data / np.max(data)
+    
+    # Split data into training and validation sets
+    split_idx = int(len(data) * (1 - validation_split))
+    train_data = data[:split_idx]
+    val_data = data[split_idx:]
+    
+    return train_data, val_data, table, max_size
             
         
 def to_text (vector,table) :
     return "".join([number_to_character(number,table) for number in vector])
         
 if __name__ == "__main__" :
-    dataset,table = getdataset()
+    train_data, val_data, table, max_size = getdataset()
     print("______________________")
-    print(to_text(dataset[1],table))
-    print(len(dataset))
+    print(to_text(train_data[1],table))
+    print(len(train_data))
+    print(len(val_data))
