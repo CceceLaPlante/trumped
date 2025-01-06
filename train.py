@@ -25,26 +25,6 @@ Y_val = np.zeros(X_val.shape).astype(int)
 Y_val[:, 0:-1] = np.array(X_val[:, 1:])
 Y_val = tf.convert_to_tensor(Y_val)
 
-# Check for NaN values in the input data
-assert not np.any(np.isnan(X_train)), "Train data contains NaN values"
-assert not np.any(np.isnan(Y_train)), "Train labels contain NaN values"
-assert not np.any(np.isnan(X_val)), "Validation data contains NaN values"
-assert not np.any(np.isnan(Y_val)), "Validation labels contain NaN values"
-
-# Check for infinite values in the input data
-assert not np.any(np.isinf(X_train)), "Train data contains infinite values"
-assert not np.any(np.isinf(Y_train)), "Train labels contain infinite values"
-assert not np.any(np.isinf(X_val)), "Validation data contains infinite values"
-assert not np.any(np.isinf(Y_val)), "Validation labels contain infinite values"
-
-# Check for NaN values in the input data
-assert not np.any(np.isnan(train_data)), "Train data contains NaN values"
-assert not np.any(np.isnan(val_data)), "Validation data contains NaN values"
-
-# Check for infinite values in the input data
-assert not np.any(np.isinf(train_data)), "Train data contains infinite values"
-assert not np.any(np.isinf(val_data)), "Validation data contains infinite values"
-
 
 EMBED_DIM = 256
 NUM_HEADS = 3
@@ -64,30 +44,15 @@ data_val = data_val.batch(BATCH_SIZE)
 model = make_model(MAX_LEN, table.vocab_size, EMBED_DIM, NUM_HEADS, NUM_BLOCS, hidden_dim)
 model.summary()
 
-def custom_loss(y_true, y_pred):
-    mask = tf.cast(tf.not_equal(y_true, 0), tf.float32)
-    loss = tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred)
-    loss *= mask
-    return tf.reduce_sum(loss) / (tf.reduce_sum(mask) + tf.keras.backend.epsilon())  # Add epsilon to prevent division by zero
 
 # Specify the learning rate here
 learning_rate = 0.00001  # Reduced learning rate
 optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, clipnorm=1.0)  # Add gradient clipping
 
 model.compile(optimizer=optimizer,
-              loss=custom_loss,
+              loss="sparse_categorical_crossentropy",
               metrics=["sparse_categorical_accuracy"])
 
-
-
-class CheckNaNCallback(tf.keras.callbacks.Callback):
-    def on_batch_end(self, batch, logs=None):
-        if np.isnan(logs['loss']):
-            print(f"NaN loss detected in batch {batch}")
-            self.model.stop_training = True
-        if np.isinf(logs['loss']):
-            print(f"Infinite loss detected in batch {batch}")
-            #self.model.stop_training = True
 
 def argmax_with_temp(array, temperature=1.0):
     array = np.log(array) / temperature
@@ -122,12 +87,13 @@ def generate_tweet(model, table):
 # Add early stopping and learning rate scheduler
 early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
 learning_rate_scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=2, verbose=1)
-check_nan = CheckNaNCallback()
 
 for i in range(10):
     #generate_tweet(model, table)
     print("=========EPOCH " + str(i) + "==========")
-    history = model.fit(data_train, epochs=2, verbose=1, validation_data=data_val, callbacks=[early_stopping, check_nan, learning_rate_scheduler])
+    generate_tweet(model, table)
+    history = model.fit(data_train, epochs=2, verbose=1, validation_data=data_val, callbacks=[early_stopping, learning_rate_scheduler])
+    
     print(f"Epoch {i} history: {history.history}")
     model.save("model.h5")
 

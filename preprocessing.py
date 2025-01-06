@@ -95,31 +95,61 @@ def padding(vector, max_size):
     if len(vector) < max_size:
         return [2] + vector + [1] + [0] * (max_size - len(vector) - 2)  # Add <sos> and <eos> tokens
     
-def getdataset(validation_split=0.2):
+def getdataset(validation_split=0.2, user_max_size = None ):
     tweets = load_data()
     data = []
     table = Table()
     max_size = 0
     
+    big_ass_list = []
+    
     for tweet in tweets:
         vec = preprocessing(tweet, table)
+        
+        big_ass_list.extend([2]+vec+[1])
+        
         if len(vec) > max_size:
             max_size = len(vec)
+        
     max_size = max_size + 2  # Add <sos> and <eos> to the end of the tweet
-    
+    """
     for idx, tweet in enumerate(tweets):
         vec = preprocessing(tweet, table)
         padded_vec = padding(vec, max_size)
         if padded_vec is None:
             continue
         tensor = padded_vec
-        data.append(tensor)
+        data.append(tensor)"""
+        
+    if user_max_size != None : 
+        max_size = user_max_size 
+    
+    total_size = len(big_ass_list) 
+    
+    dim1 = total_size//max_size 
+    dim2 = max_size 
+    
+    r = total_size % max_size
+    
+    print("on print tout ça là oh")
+    
+    print("dim1 : ", dim1)
+    print("dim2", dim2) 
+    print(dim1*dim2 + max_size)
+    print("reste : ",r)
+    
+    print("________________")
+    
+    
+    big_ass_list.extend( big_ass_list[0:max_size-r].copy() )
+    
+    data = np.array( big_ass_list )
+    data = data.reshape( (dim1+1,dim2) )
     
     # Split data into training and validation sets
-    data = np.array(data)
-    split_idx = int(len(data) * (1 - validation_split))
-    train_data = data[:split_idx]
-    val_data = data[split_idx:]
+    split_idx = int(dim1 * (1 - validation_split))
+    train_data = data[:split_idx,:]
+    val_data = data[split_idx:,:]
     
     # Ensure no NaN or infinite values in the dataset
     assert not np.any(np.isnan(train_data)), "Train data contains NaN values"
