@@ -11,10 +11,8 @@ def train() :
 
     os.environ["KERAS_BACKEND"] = "tensorflow"
 
-    MIN_FREQ = 20
 
     train_data, val_data, table, MAX_LEN = getdataset()
-    table.crop(MIN_FREQ)
     print(table.vocab_size)
 
     X_train = tf.convert_to_tensor(train_data)

@@ -27,7 +27,8 @@ class Table () :
     def number_to_character (self, number) :
         return self.reverse_table[int(number)]
     
-    def crop (self, min_occurence) : 
+    def crop (self, min_occurence, vectors) : 
+        
         new_table = {"<pad>" : 0, "<eos>" : 1, "<sos>" : 2}
         new_reverse_table = {0:"<pad>",1:"<eos>", 2:"<sos>"}
         new_vocab_size = 3
@@ -46,6 +47,8 @@ class Table () :
         self.reverse_table = new_reverse_table
         self.vocab_size = new_vocab_size
         self.frequency = new_frequency
+    
+        
         
 
 def load_data () :
@@ -69,10 +72,10 @@ def number_to_character (number,table) :
 
 def character_to_number (char,table) :
     return table.get_and_add(char)
-    
+
 
 def preprocessing(text, table):
-    splited_text = text.split(" ")
+    splited_text = text
     splited_text = [word.lower() for word in splited_text]  # Convert to lowercase
     
     new_text = ""
@@ -87,6 +90,7 @@ def preprocessing(text, table):
             new_text += word
             vector.append(character_to_number(word, table))
             idx += 1
+            
     return vector
 
 def padding(vector, max_size):
