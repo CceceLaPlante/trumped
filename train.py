@@ -4,7 +4,7 @@ from preprocessing import getdataset, character_to_number, number_to_character
 
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
+from keras import layers
 import numpy as np
 
 os.environ["KERAS_BACKEND"] = "tensorflow"
@@ -15,15 +15,51 @@ train_data, val_data, table, MAX_LEN = getdataset()
 table.crop(MIN_FREQ)
 print(table.vocab_size)
 
+X_train = tf.convert_to_tensor(train_data)
+Y_train = np.zeros(X_train.shape).astype(int)
+Y_train[:, 0:-1] = np.array(X_train[:, 1:])
+Y_train = tf.convert_to_tensor(Y_train)
+
+X_val = tf.convert_to_tensor(val_data)
+Y_val = np.zeros(X_val.shape).astype(int)
+Y_val[:, 0:-1] = np.array(X_val[:, 1:])
+Y_val = tf.convert_to_tensor(Y_val)
+
+# Check for NaN values in the input data
+assert not np.any(np.isnan(X_train)), "Train data contains NaN values"
+assert not np.any(np.isnan(Y_train)), "Train labels contain NaN values"
+assert not np.any(np.isnan(X_val)), "Validation data contains NaN values"
+assert not np.any(np.isnan(Y_val)), "Validation labels contain NaN values"
+
+# Check for infinite values in the input data
+assert not np.any(np.isinf(X_train)), "Train data contains infinite values"
+assert not np.any(np.isinf(Y_train)), "Train labels contain infinite values"
+assert not np.any(np.isinf(X_val)), "Validation data contains infinite values"
+assert not np.any(np.isinf(Y_val)), "Validation labels contain infinite values"
+
 # Check for NaN values in the input data
 assert not np.any(np.isnan(train_data)), "Train data contains NaN values"
 assert not np.any(np.isnan(val_data)), "Validation data contains NaN values"
 
-EMBED_DIM = 64
+# Check for infinite values in the input data
+assert not np.any(np.isinf(train_data)), "Train data contains infinite values"
+assert not np.any(np.isinf(val_data)), "Validation data contains infinite values"
+
+
+EMBED_DIM = 256
 NUM_HEADS = 3
 NUM_BLOCS = 5
 hidden_dim = 256
 BATCH_SIZE = 64
+
+data_train = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
+data_train = data_train.shuffle(buffer_size=1024).batch(BATCH_SIZE)
+
+data_val = tf.data.Dataset.from_tensor_slices((X_val, Y_val))
+data_val = data_val.batch(BATCH_SIZE)
+
+
+# ----------------------------------------
 
 model = make_model(MAX_LEN, table.vocab_size, EMBED_DIM, NUM_HEADS, NUM_BLOCS, hidden_dim)
 model.summary()
@@ -36,31 +72,12 @@ def custom_loss(y_true, y_pred):
 
 # Specify the learning rate here
 learning_rate = 0.00001  # Reduced learning rate
-optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, clipnorm=1.0)  # Use RMSprop optimizer
+optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, clipnorm=1.0)  # Add gradient clipping
 
 model.compile(optimizer=optimizer,
               loss=custom_loss,
               metrics=["sparse_categorical_accuracy"])
 
-X_train = tf.convert_to_tensor(train_data)
-Y_train = np.zeros(X_train.shape).astype(int)
-Y_train[:, 0:-1] = np.array(X_train[:, 1:])
-Y_train = tf.convert_to_tensor(Y_train)
-
-X_val = tf.convert_to_tensor(val_data)
-Y_val = np.zeros(X_val.shape).astype(int)
-Y_val[:, 0:-1] = np.array(X_val[:, 1:])
-Y_val = tf.convert_to_tensor(Y_val)
-
-data_train = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
-data_train = data_train.shuffle(buffer_size=1024).batch(BATCH_SIZE)
-
-data_val = tf.data.Dataset.from_tensor_slices((X_val, Y_val))
-data_val = data_val.batch(BATCH_SIZE)
-
-#check for NaN values in the input data
-assert not np.any(np.isnan(train_data)), "Train data contains NaN values"
-assert not np.any(np.isnan(val_data)), "Validation data contains NaN values"
 
 
 class CheckNaNCallback(tf.keras.callbacks.Callback):
@@ -68,7 +85,9 @@ class CheckNaNCallback(tf.keras.callbacks.Callback):
         if np.isnan(logs['loss']):
             print(f"NaN loss detected in batch {batch}")
             self.model.stop_training = True
-            
+        if np.isinf(logs['loss']):
+            print(f"Infinite loss detected in batch {batch}")
+            #self.model.stop_training = True
 
 def argmax_with_temp(array, temperature=1.0):
     array = np.log(array) / temperature
@@ -78,6 +97,7 @@ def argmax_with_temp(array, temperature=1.0):
       
 
 def generate_tweet(model, table):
+    
     text_to_begin_with = "make america".split(" ")
     text_to_begin_with = []
     begining = [table.table[i] for i in text_to_begin_with]
@@ -105,9 +125,10 @@ learning_rate_scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss
 check_nan = CheckNaNCallback()
 
 for i in range(10):
-    generate_tweet(model, table)
+    #generate_tweet(model, table)
     print("=========EPOCH " + str(i) + "==========")
-    model.fit(data_train, epochs=5, batch_size=BATCH_SIZE, verbose=1, validation_data=data_val, callbacks=[early_stopping, check_nan,learning_rate_scheduler])
+    history = model.fit(data_train, epochs=2, verbose=1, validation_data=data_val, callbacks=[early_stopping, check_nan, learning_rate_scheduler])
+    print(f"Epoch {i} history: {history.history}")
     model.save("model.h5")
 
 model.save("model.h5")

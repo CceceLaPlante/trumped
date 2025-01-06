@@ -56,6 +56,10 @@ def load_data () :
         reader = csv.DictReader(csvfile)
         for row in reader:
             tweets.append(row['content'])
+            
+    print("Number of tweets: ", len(tweets))
+    print("using the first 10 000 tweets")
+    tweets = tweets[:10000] 
     
     return tweets
     
@@ -67,48 +71,29 @@ def character_to_number (char,table) :
     return table.get_and_add(char)
     
 
-def preprocessing (text, table) :
-    """
-        we want to clean our tweets from : 
-            + urls
-            + \n 
-            + majuscules 
-            
-        finaly we change our character to numbers
-
-    """
+def preprocessing(text, table):
     splited_text = text.split(" ")
-    splited_text = [word.lower() for word in splited_text]  # on met tout en minuscule
+    splited_text = [word.lower() for word in splited_text]  # Convert to lowercase
     
     new_text = ""
     vector = []
     idx = 0
-    while idx < len(splited_text) and len(splited_text) != 0 :
+    while idx < len(splited_text) and len(splited_text) != 0:
         word = splited_text[idx]
-        if word == "\n" :
-            idx +=1 
-            continue 
-        
-        elif "http" in word :
+        if word == "\n" or "http" in word:
             idx += 1
             continue
-
-        else : 
+        else:
             new_text += word
-            vector.append(character_to_number(word,table))
+            vector.append(character_to_number(word, table))
             idx += 1
-
-            
-    
     return vector
-             
 
-def padding (vector, max_size) :
-    if len(vector) >= max_size-2 :
-        return [2]+vector[:max_size-2]+[1]
-
-    if len(vector) < max_size :
-        return  [2]+vector+[1]+[0]*(max_size-len(vector)-2) # on ajoute un <sos> et un <eos> à la fin du tweet
+def padding(vector, max_size):
+    if len(vector) >= max_size - 2:
+        return [2] + vector[:max_size - 2] + [1]
+    if len(vector) < max_size:
+        return [2] + vector + [1] + [0] * (max_size - len(vector) - 2)  # Add <sos> and <eos> tokens
     
 def getdataset(validation_split=0.2):
     tweets = load_data()
@@ -130,14 +115,17 @@ def getdataset(validation_split=0.2):
         tensor = padded_vec
         data.append(tensor)
     
-    # Normalize data
-    data = np.array(data)
-    data = data / np.max(data)
-    
     # Split data into training and validation sets
+    data = np.array(data)
     split_idx = int(len(data) * (1 - validation_split))
     train_data = data[:split_idx]
     val_data = data[split_idx:]
+    
+    # Ensure no NaN or infinite values in the dataset
+    assert not np.any(np.isnan(train_data)), "Train data contains NaN values"
+    assert not np.any(np.isnan(val_data)), "Validation data contains NaN values"
+    assert not np.any(np.isinf(train_data)), "Train data contains infinite values"
+    assert not np.any(np.isinf(val_data)), "Validation data contains infinite values"
     
     return train_data, val_data, table, max_size
             
@@ -150,4 +138,3 @@ if __name__ == "__main__" :
     print("______________________")
     print(to_text(train_data[1],table))
     print(len(train_data))
-    print(len(val_data))
