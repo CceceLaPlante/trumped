@@ -61,8 +61,7 @@ def load_data () :
             tweets.append(row['content'])
             
     print("Number of tweets: ", len(tweets))
-    print("using the first 10 000 tweets")
-    tweets = tweets[:10000] 
+
     
     return tweets
     
