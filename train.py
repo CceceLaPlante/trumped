@@ -26,9 +26,9 @@ def train() :
     Y_val = tf.convert_to_tensor(Y_val)
 
 
-    EMBED_DIM = 256
-    NUM_HEADS = 3
-    NUM_BLOCS = 5
+    EMBED_DIM = 128
+    NUM_HEADS = 8
+    NUM_BLOCS = 8
     hidden_dim = 256
     BATCH_SIZE = 64
 
@@ -46,7 +46,7 @@ def train() :
 
 
     # Specify the learning rate here
-    learning_rate = 0.00001  # Reduced learning rate
+    learning_rate = 0.001  # Reduced learning rate
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, clipnorm=1.0)  # Add gradient clipping
 
     model.compile(optimizer=optimizer,
