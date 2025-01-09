@@ -8,7 +8,7 @@ from keras import layers
 class TransformerBlock(layers.Layer):
     def __init__(self, embed_dim, num_heads):
         super().__init__()
-        self.att = layers.MultiHeadAttention(num_heads, embed_dim, value_dim=embed_dim, dropout=0.2, kernel_regularizer=tf.keras.regularizers.l2(0.01))
+        self.att = layers.MultiHeadAttention(num_heads, embed_dim, value_dim=embed_dim, dropout=0.4)
         self.layernorm1 = layers.LayerNormalization()
         self.ffn = layers.Dense(embed_dim, activation="relu")  # Change activation) to relu for numerical stability
         self.layernorm2 = layers.LayerNormalization()

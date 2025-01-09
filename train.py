@@ -27,9 +27,9 @@ def train() :
 
 
     EMBED_DIM = 128
-    NUM_HEADS = 8
-    NUM_BLOCS = 8
-    hidden_dim = 256
+    NUM_HEADS = 3
+    NUM_BLOCS = 6
+    hidden_dim = 128
     BATCH_SIZE = 64
 
     data_train = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
@@ -74,14 +74,14 @@ def train() :
 
         while not exit:
             output = model.predict(input, verbose=0)
-            #input[0, nb_iter] = argmax_with_temp(output[0, nb_iter - 1], temperature=1)
-            input[0, nb_iter] = np.argmax(output[0, nb_iter - 1])
+            input[0, nb_iter] = argmax_with_temp(output[0, nb_iter - 1], temperature=0.95)
+            #input[0, nb_iter] = np.argmax(output[0, nb_iter - 1])
             nb_iter += 1
             if nb_iter == max_iter:
                 exit = True
 
         print("--------------------")
-        print(" ".join([table.number_to_character(input[0, i]) for i in range(len(input[0]))]))
+        print("".join([table.number_to_character(input[0, i]) for i in range(len(input[0]))]))
         print("--------------------")
 
     # Add early stopping and learning rate scheduler
@@ -92,9 +92,12 @@ def train() :
         #generate_tweet(model, table)
         print("=========EPOCH " + str(i) + "==========")
         generate_tweet(model, table)
-        history = model.fit(data_train, epochs=2, verbose=1, validation_data=data_val, callbacks=[early_stopping, learning_rate_scheduler])
+        history = model.fit(data_train, epochs=5, verbose=1, validation_data=data_val, callbacks=[early_stopping, learning_rate_scheduler])
         
         print(f"Epoch {i} history: {history.history}")
         model.save("model.h5")
 
     model.save("model.h5")
+
+if __name__ == "__main__":
+    train()
