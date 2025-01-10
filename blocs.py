@@ -8,7 +8,7 @@ from keras import layers
 class TransformerBlock(layers.Layer):
     def __init__(self, embed_dim, num_heads):
         super().__init__()
-        self.att = layers.MultiHeadAttention(num_heads, embed_dim, value_dim=embed_dim, dropout=0.4)
+        self.att = layers.MultiHeadAttention(num_heads, embed_dim, value_dim=embed_dim, dropout=0.5)
         self.layernorm1 = layers.LayerNormalization()
         self.ffn = layers.Dense(embed_dim, activation="relu")  # Change activation) to relu for numerical stability
         self.layernorm2 = layers.LayerNormalization()
@@ -22,7 +22,7 @@ class TransformerBlock(layers.Layer):
 class TokenAndPositionEmbedding(layers.Layer):
     def __init__(self, maxlen, vocab_size, embed_dim):
         super().__init__()
-        self.token_emb = layers.Embedding(input_dim=vocab_size, output_dim=embed_dim, mask_zero=True)
+        self.token_emb = layers.Embedding(input_dim=vocab_size, output_dim=embed_dim)
         self.pos_emb = layers.Embedding(input_dim=maxlen, output_dim=embed_dim)
 
     def call(self, x):

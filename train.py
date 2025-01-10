@@ -1,6 +1,6 @@
 import os
 from network import make_model
-from preprocessing import getdataset, character_to_number, number_to_character
+from preprocessing import getdataset
 
 import tensorflow as tf
 from tensorflow import keras
@@ -11,9 +11,10 @@ def train() :
 
     os.environ["KERAS_BACKEND"] = "tensorflow"
 
+    MAX_LEN = 100
+    train_data, val_data, vocab, index_to_word, MAX_LEN = getdataset(MAX_LEN,max_vocab_size=10000,validation_split=0.1)
 
-    train_data, val_data, table, MAX_LEN = getdataset()
-    print(table.vocab_size)
+
 
     X_train = tf.convert_to_tensor(train_data)
     Y_train = np.zeros(X_train.shape).astype(int)
@@ -26,10 +27,10 @@ def train() :
     Y_val = tf.convert_to_tensor(Y_val)
 
 
-    EMBED_DIM = 128
+    EMBED_DIM = 1024
     NUM_HEADS = 3
-    NUM_BLOCS = 6
-    hidden_dim = 128
+    NUM_BLOCS = 8
+    hidden_dim = 512
     BATCH_SIZE = 64
 
     data_train = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
@@ -41,7 +42,7 @@ def train() :
 
     # ----------------------------------------
 
-    model = make_model(MAX_LEN, table.vocab_size, EMBED_DIM, NUM_HEADS, NUM_BLOCS, hidden_dim)
+    model = make_model(MAX_LEN, len(vocab), EMBED_DIM, NUM_HEADS, NUM_BLOCS, hidden_dim)
     model.summary()
 
 
@@ -61,15 +62,12 @@ def train() :
         return np.random.choice(len(array), p=array)
         
 
-    def generate_tweet(model, table):
+    def generate_tweet(model,index_to_word):
         
-        text_to_begin_with = "make america".split(" ")
-        text_to_begin_with = []
-        begining = [table.table[i] for i in text_to_begin_with]
-        nb_to_repeat = MAX_LEN - len(begining) - 1
-        input = np.array([[2] + begining + [0] * nb_to_repeat])
+        
+        input = np.array([[0] * MAX_LEN])
         exit = False
-        nb_iter = len(text_to_begin_with) + 1
+        nb_iter =  2
         max_iter = MAX_LEN
 
         while not exit:
@@ -81,7 +79,7 @@ def train() :
                 exit = True
 
         print("--------------------")
-        print("".join([table.number_to_character(input[0, i]) for i in range(len(input[0]))]))
+        print(" ".join([index_to_word[input[0, i]] for i in range(len(input[0]))]))
         print("--------------------")
 
     # Add early stopping and learning rate scheduler
@@ -91,7 +89,7 @@ def train() :
     for i in range(10):
         #generate_tweet(model, table)
         print("=========EPOCH " + str(i) + "==========")
-        generate_tweet(model, table)
+        generate_tweet(model,index_to_word)
         history = model.fit(data_train, epochs=5, verbose=1, validation_data=data_val, callbacks=[early_stopping, learning_rate_scheduler])
         
         print(f"Epoch {i} history: {history.history}")
