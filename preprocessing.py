@@ -24,16 +24,50 @@ def load_data () :
     
     return tweets
     
+def word_or_unknown (word,word_freq,freq=3) : 
+    if word_freq[word] > freq : 
+        return word
+    else :
+        return "<UNK>"
+    
+def remove_non_freq_words (tweets, freq=3) : 
+    word_freq = {" ":freq+1}
+    for tweet in tweets:
+        for word in tweet:
+            if word in word_freq:
+                word_freq[word] += 1
+            else:
+                word_freq[word] = 1
+    
+    tweets = [''.join([word_or_unknown(word,word_freq,freq) for word in tweet]) for tweet in tweets]
+    
+    return tweets
 
 def preprocess_tweet(tweet) : 
-    filter = '#%*+/;<=>[\\]^_`{|}~\t\n^'
+    filter = '#%*+/;=[\\]^_`{|}~\t\n^*§¨`~'
     tweet = tweet.lower()
-    tweet = tweet.translate(str.maketrans('', '', filter))
-    return tweet
+    
+    new_tweet = ""
+    for char in tweet:
+        if char not in filter:
+            new_tweet += char
+        else:
+            new_tweet += ""
+    
+    return new_tweet
     
     
-def getdataset(validation_split=0.2 ,user_max_size = None,vocab_size_minus1=700) :
-    tweets = load_data()
+def getdataset(validation_split=0.2 ,user_max_size = None,vocab_size_minus1=700,freq=3) :
+    tweets = remove_non_freq_words(load_data(), freq=freq)
+    preprocessed_tweet = [preprocess_tweet(tweet) for tweet in tweets]
+    
+    print("nb chars : ")
+    chars = []
+    for tweet in preprocessed_tweet:
+        for char in tweet:
+            if char not in chars:
+                chars.append(char)
+    print(len(chars))
     data = []
     
     tokenizer = Tokenizer(models.Unigram())
@@ -42,11 +76,10 @@ def getdataset(validation_split=0.2 ,user_max_size = None,vocab_size_minus1=700)
     tokenizer.decoder = decoders.ByteLevel()
     trainer = trainers.UnigramTrainer(
         vocab_size=vocab_size_minus1,
-        initial_alphabet=pre_tokenizers.ByteLevel.alphabet(),
-        special_tokens=["<SOS>", "<EOS>"],
+        special_tokens=["<sos>", "<eos>","<unk>"],
         )
     
-    tokenizer.train_from_iterator(tweets,trainer=trainer)
+    tokenizer.train_from_iterator(preprocessed_tweet,trainer=trainer)
     tokenizer.add_tokens([" "])
     
     #print(tokenizer.encode(tweets[0]+"<EOS>").ids)
@@ -54,11 +87,11 @@ def getdataset(validation_split=0.2 ,user_max_size = None,vocab_size_minus1=700)
     big_ass_list = []
     max_size = 0
     
-    for tweet in tweets:
-        preprocessed = preprocess_tweet(tweet)
-        vec = tokenizer.encode(preprocessed).ids
+    for tweet in preprocessed_tweet:
+        tw = "<sos>"+tweet+"<eos>"
+        vec = tokenizer.encode(tw).ids
         
-        big_ass_list.extend([2]+vec+[1])
+        big_ass_list.extend(vec)
         
         if len(vec) > max_size:
             max_size = len(vec)
@@ -104,7 +137,7 @@ def getdataset(validation_split=0.2 ,user_max_size = None,vocab_size_minus1=700)
     return train_data, val_data, tokenizer, max_size, tokenizer.get_vocab_size()
         
 if __name__ == "__main__" :
-    train_data, val_data, tokenizer, max_size, vocab_size = getdataset(vocab_size_minus1=500)
+    train_data, val_data, tokenizer, max_size, vocab_size = getdataset(vocab_size_minus1=150,freq=10)
     print(train_data[0])
     
     print( tokenizer.decode(train_data[0], skip_special_tokens=False) )

@@ -13,7 +13,7 @@ def train() :
 
     os.environ["KERAS_BACKEND"] = "tensorflow"
 
-    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=500, user_max_size=200)
+    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=200, user_max_size=200,freq=10)
 
 
 
@@ -28,11 +28,11 @@ def train() :
     Y_val = tf.convert_to_tensor(Y_val)
 
 
-    EMBED_DIM = 64
-    NUM_HEADS = 3
-    NUM_BLOCS = 7
-    hidden_dim = 64
-    BATCH_SIZE = 256
+    EMBED_DIM = 32
+    NUM_HEADS = 4
+    NUM_BLOCS = 8
+    hidden_dim = 256
+    BATCH_SIZE = 128
 
     data_train = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
     data_train = data_train.shuffle(buffer_size=1024).batch(BATCH_SIZE)
@@ -89,13 +89,18 @@ def train() :
     for i in range(10):
         #generate_tweet(model, table)
         print("=========EPOCH " + str(i) + "==========")
-        generate_tweet(model,tokenizer)
         history = model.fit(data_train, epochs=10, verbose=1, validation_data=data_val, callbacks=[ learning_rate_scheduler])
-        historic_accuracy.append(history.history["val_sparse_categorical_accuracy"])
-        
+        historic_accuracy.extend(history.history["val_sparse_categorical_accuracy"])
+        generate_tweet(model,tokenizer)
+
         model.save("model.keras")
 
-    plt.plot(historic_accuracy)
+        print("q to quit, else continue")
+
+        if input() == "q":
+            break
+
+    plt.plot(np.array(historic_accuracy).flatten())
     plt.show()
 
 if __name__ == "__main__":
