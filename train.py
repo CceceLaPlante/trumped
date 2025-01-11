@@ -7,11 +7,13 @@ from tensorflow import keras
 from keras import layers
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 def train() :
 
     os.environ["KERAS_BACKEND"] = "tensorflow"
 
-    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=500, user_max_size=100)
+    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=500, user_max_size=200)
 
 
 
@@ -28,9 +30,9 @@ def train() :
 
     EMBED_DIM = 64
     NUM_HEADS = 3
-    NUM_BLOCS = 5
-    hidden_dim = 256
-    BATCH_SIZE = 64
+    NUM_BLOCS = 7
+    hidden_dim = 64
+    BATCH_SIZE = 256
 
     data_train = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
     data_train = data_train.shuffle(buffer_size=1024).batch(BATCH_SIZE)
@@ -71,7 +73,7 @@ def train() :
 
         while not exit:
             output = model.predict(input, verbose=0)
-            input[0, nb_iter] = argmax_with_temp(output[0, nb_iter - 1], temperature=0.95)
+            input[0, nb_iter] = argmax_with_temp(output[0, nb_iter - 1], temperature=0.99)
             #input[0, nb_iter] = np.argmax(output[0, nb_iter - 1])
             nb_iter += 1
             if nb_iter == max_iter:
@@ -83,17 +85,18 @@ def train() :
 
     # Add early stopping and learning rate scheduler
     learning_rate_scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=4, verbose=1)
-
+    historic_accuracy = []
     for i in range(10):
         #generate_tweet(model, table)
         print("=========EPOCH " + str(i) + "==========")
         generate_tweet(model,tokenizer)
         history = model.fit(data_train, epochs=10, verbose=1, validation_data=data_val, callbacks=[ learning_rate_scheduler])
+        historic_accuracy.append(history.history["val_sparse_categorical_accuracy"])
         
-        print(f"Epoch {i} history: {history.history}")
-        model.save("model.h5")
+        model.save("model.keras")
 
-    model.save("model.h5")
+    plt.plot(historic_accuracy)
+    plt.show()
 
 if __name__ == "__main__":
     train()
