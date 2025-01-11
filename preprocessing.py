@@ -3,7 +3,11 @@ import tensorflow as tf
 import numpy as np
 
 from tqdm import tqdm
-from keras.layers import TextVectorization
+
+from tokenizers import Tokenizer, decoders, models, normalizers, pre_tokenizers, trainers
+from tokenizers.models import BPE
+from tokenizers.trainers import BpeTrainer
+from tokenizers.pre_tokenizers import Whitespace
 
 
 def load_data () :
@@ -20,63 +24,90 @@ def load_data () :
     
     return tweets
     
+
+def preprocess_tweet(tweet) : 
+    filter = '#%*+/;<=>[\\]^_`{|}~\t\n^'
+    tweet = tweet.lower()
+    tweet = tweet.translate(str.maketrans('', '', filter))
+    return tweet
     
-def getdataset(max_size, validation_split=0.2 ,max_vocab_size = 5000):
+    
+def getdataset(validation_split=0.2 ,user_max_size = None,vocab_size_minus1=700) :
     tweets = load_data()
     data = []
     
-    vectorizer = TextVectorization(max_tokens=max_vocab_size, output_sequence_length=max_size)
+    tokenizer = Tokenizer(models.Unigram())
+    tokenizer.normalizer = normalizers.NFKC()
+    tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel()
+    tokenizer.decoder = decoders.ByteLevel()
+    trainer = trainers.UnigramTrainer(
+        vocab_size=vocab_size_minus1,
+        initial_alphabet=pre_tokenizers.ByteLevel.alphabet(),
+        special_tokens=["<SOS>", "<EOS>"],
+        )
     
-    text_ds = tf.data.Dataset.from_tensor_slices(tweets).batch(128)
+    tokenizer.train_from_iterator(tweets,trainer=trainer)
+    tokenizer.add_tokens([" "])
     
-    print("fitting...")
-    vectorizer.adapt(text_ds)
-    vocab = vectorizer.get_vocabulary()
-    print("done")
-    print("Vocabulary size: ", len(vocab))
+    #print(tokenizer.encode(tweets[0]+"<EOS>").ids)
+    
+    big_ass_list = []
+    max_size = 0
+    
+    for tweet in tweets:
+        preprocessed = preprocess_tweet(tweet)
+        vec = tokenizer.encode(preprocessed).ids
         
-    
-    print("vectorizing...")
-    tokenized=  vectorizer(tweets)
-    tokenized = tokenized.numpy()
-    
-    index_to_word = {index: word for index, word in enumerate(vocab)}
-
-    # ok sauf que là tout est pad avec des 0, et on veux pas de ça ! 
-    # on vas donc stack les tweets, et les séparer avec des 0
-    
-    print("stacking...")
-    stacked_list = [np.zeros(max_size)]
-    idx = 0
-    for tweet in tokenized : 
-        idx +=1
-        for tok in tweet :
-            if tok != 0 :
-                if idx < max_size :
-                    stacked_list[-1][idx] = tok
-                    idx += 1
-                else : 
-                    stacked_list.append(np.zeros(max_size))
-                    idx = 0
-                    stacked_list[-1][idx] = tok
-                    idx += 1
-            else : 
-                break
-    stacked_list = np.array(stacked_list)
-    
-    vocab[0] = "<PAD>"
-    index_to_word[0] = "<PAD>"
-    
-    train_data= np.array(stacked_list[:int(len(stacked_list) * (1 - validation_split))])
-    val_data= np.array(stacked_list[int(len(stacked_list) * (1 - validation_split)):])
-    
-    
+        big_ass_list.extend([2]+vec+[1])
         
-    return train_data,val_data, vocab, index_to_word, max_size
+        if len(vec) > max_size:
+            max_size = len(vec)
+        
+    max_size = max_size + 2  # Add <sos> and <eos> to the end of the tweet
     
+    if user_max_size != None : 
+        max_size = user_max_size 
+    
+    total_size = len(big_ass_list) 
+    
+    dim1 = total_size//max_size 
+    dim2 = max_size 
+    
+    r = total_size % max_size
+    
+    print("on print tout ça là oh")
+    
+    print("dim1 : ", dim1)
+    print("dim2", dim2) 
+    print(dim1*dim2 + max_size)
+    print("reste : ",r)
+    
+    print("________________")
+    
+    
+    big_ass_list.extend( big_ass_list[0:max_size-r].copy() )
+    
+    data = np.array( big_ass_list )
+    data = data.reshape( (dim1+1,dim2) )
+    
+    # Split data into training and validation sets
+    split_idx = int(dim1 * (1 - validation_split))
+    train_data = data[:split_idx,:]
+    val_data = data[split_idx:,:]
+    
+    # Ensure no NaN or infinite values in the dataset
+    assert not np.any(np.isnan(train_data)), "Train data contains NaN values"
+    assert not np.any(np.isnan(val_data)), "Validation data contains NaN values"
+    assert not np.any(np.isinf(train_data)), "Train data contains infinite values"
+    assert not np.any(np.isinf(val_data)), "Validation data contains infinite values"
+        
+    return train_data, val_data, tokenizer, max_size, tokenizer.get_vocab_size()
         
 if __name__ == "__main__" :
-    train_data, val_data, vocab, index_to_word, max_size = getdataset(300)
+    train_data, val_data, tokenizer, max_size, vocab_size = getdataset(vocab_size_minus1=500)
     print(train_data[0])
     
-    print(  " ".join([index_to_word[i] for i in val_data[0]]) )
+    print( tokenizer.decode(train_data[0], skip_special_tokens=False) )
+    
+    print("vocab _size : ", vocab_size)
+    print(tokenizer.get_vocab())

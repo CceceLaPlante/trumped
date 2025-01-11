@@ -11,8 +11,7 @@ def train() :
 
     os.environ["KERAS_BACKEND"] = "tensorflow"
 
-    MAX_LEN = 100
-    train_data, val_data, vocab, index_to_word, MAX_LEN = getdataset(MAX_LEN,max_vocab_size=10000,validation_split=0.1)
+    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=500, user_max_size=100)
 
 
 
@@ -27,10 +26,10 @@ def train() :
     Y_val = tf.convert_to_tensor(Y_val)
 
 
-    EMBED_DIM = 1024
+    EMBED_DIM = 64
     NUM_HEADS = 3
-    NUM_BLOCS = 8
-    hidden_dim = 512
+    NUM_BLOCS = 5
+    hidden_dim = 256
     BATCH_SIZE = 64
 
     data_train = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
@@ -42,7 +41,7 @@ def train() :
 
     # ----------------------------------------
 
-    model = make_model(MAX_LEN, len(vocab), EMBED_DIM, NUM_HEADS, NUM_BLOCS, hidden_dim)
+    model = make_model(MAX_LEN, vocab_size, EMBED_DIM, NUM_HEADS, NUM_BLOCS, hidden_dim)
     model.summary()
 
 
@@ -62,7 +61,7 @@ def train() :
         return np.random.choice(len(array), p=array)
         
 
-    def generate_tweet(model,index_to_word):
+    def generate_tweet(model,tokenizer):
         
         
         input = np.array([[0] * MAX_LEN])
@@ -79,18 +78,17 @@ def train() :
                 exit = True
 
         print("--------------------")
-        print(" ".join([index_to_word[input[0, i]] for i in range(len(input[0]))]))
+        print(tokenizer.decode(input[0], skip_special_tokens=False) )
         print("--------------------")
 
     # Add early stopping and learning rate scheduler
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
-    learning_rate_scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=2, verbose=1)
+    learning_rate_scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=4, verbose=1)
 
     for i in range(10):
         #generate_tweet(model, table)
         print("=========EPOCH " + str(i) + "==========")
-        generate_tweet(model,index_to_word)
-        history = model.fit(data_train, epochs=5, verbose=1, validation_data=data_val, callbacks=[early_stopping, learning_rate_scheduler])
+        generate_tweet(model,tokenizer)
+        history = model.fit(data_train, epochs=10, verbose=1, validation_data=data_val, callbacks=[ learning_rate_scheduler])
         
         print(f"Epoch {i} history: {history.history}")
         model.save("model.h5")
