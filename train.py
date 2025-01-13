@@ -16,7 +16,7 @@ def train() :
 
     os.environ["KERAS_BACKEND"] = "tensorflow"
 
-    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=200, user_max_size=200,freq=20)
+    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=230, user_max_size=200,freq=20)
 
     tokenizer.save("tokenizer.json")
 
@@ -50,16 +50,11 @@ def train() :
     model.summary()
 
 
-
-    def scce_with_ls(y, y_hat):
-        y = tf.one_hot(tf.cast(y, tf.int32), vocab_size)
-        return categorical_crossentropy(y, y_hat, label_smoothing = 0.1)
-
     # Specify the learning rate here
     learning_rate = 0.001  # Reduced learning rate
     optimizer = tf.keras.optimizers.AdamW(learning_rate=learning_rate, clipnorm=1.0)  # Add gradient clipping
     model.compile(optimizer=optimizer,
-                loss=scce_with_ls,
+                loss="sparse_categorical_crossentropy",
                 metrics=["sparse_categorical_accuracy"])
 
 
@@ -75,7 +70,7 @@ def train() :
         
         input = np.array([[0] * MAX_LEN])
         exit = False
-        nb_iter =  2
+        nb_iter =  1
         max_iter = MAX_LEN
 
         while not exit:
