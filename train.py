@@ -16,7 +16,7 @@ def train() :
 
     os.environ["KERAS_BACKEND"] = "tensorflow"
 
-    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=230, user_max_size=200,freq=20)
+    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=230, user_max_size=100,freq=20)
 
     tokenizer.save("tokenizer.json")
 
@@ -31,10 +31,10 @@ def train() :
     Y_val = tf.convert_to_tensor(Y_val)
 
 
-    EMBED_DIM = 128
+    EMBED_DIM = 256
     NUM_HEADS = 4
-    NUM_BLOCS = 7
-    hidden_dim = 128
+    NUM_BLOCS = 6
+    hidden_dim = 256
     BATCH_SIZE = 64
 
     data_train = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
@@ -75,7 +75,7 @@ def train() :
 
         while not exit:
             output = model.predict(input, verbose=0)
-            input[0, nb_iter] = argmax_with_temp(output[0, nb_iter - 1], temperature=0.8)
+            input[0, nb_iter] = argmax_with_temp(output[0, nb_iter - 1], temperature=0.7)
             #input[0, nb_iter] = np.argmax(output[0, nb_iter - 1])
             nb_iter += 1
             if nb_iter == max_iter:
