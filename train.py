@@ -91,11 +91,11 @@ def train() :
     for i in range(10):
         #generate_tweet(model, table)
         print("=========EPOCH " + str(i) + "==========")
-        history = model.fit(data_train, epochs=10, verbose=1, validation_data=data_val, callbacks=[ learning_rate_scheduler])
+        history = model.fit(data_train, epochs=20, verbose=1, validation_data=data_val, callbacks=[ learning_rate_scheduler])
         historic_accuracy.extend(history.history["val_sparse_categorical_accuracy"])
         generate_tweet(model,tokenizer)
 
-        model.save("model_"+str(EMBED_DIM)+"_"+str(NUM_HEADS)+"_"+str(NUM_BLOCS)+"_"+str(hidden_dim)+"_"+str(vocab_size)+"_"+".keras")
+        model.save("model_"+str(EMBED_DIM)+"_"+str(NUM_HEADS)+"_"+str(NUM_BLOCS)+"_"+str(hidden_dim)+"_"+str(vocab_size)+"_"+str(MAX_LEN)+".h5")
 
     plt.plot(np.array(historic_accuracy).flatten())
     plt.show()

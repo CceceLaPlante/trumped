@@ -6,8 +6,8 @@ import tensorflow as tf
 from keras import layers
 
 class TransformerBlock(layers.Layer):
-    def __init__(self, embed_dim, num_heads):
-        super().__init__()
+    def __init__(self, embed_dim, num_heads,**kwargs):
+        super(TransformerBlock,self).__init__(**kwargs)
         self.att = layers.MultiHeadAttention(num_heads, embed_dim, value_dim=embed_dim, dropout=0.2)
         self.layernorm1 = layers.LayerNormalization()
         self.ffn = layers.Dense(embed_dim, activation="relu")  # Change activation) to relu for numerical stability
@@ -26,8 +26,8 @@ class TransformerBlock(layers.Layer):
         return self.layernorm2(out1 + ffn_output)
 
 class TokenAndPositionEmbedding(layers.Layer):
-    def __init__(self, maxlen, vocab_size, embed_dim):
-        super().__init__()
+    def __init__(self, maxlen, vocab_size, embed_dim, **kwargs):
+        super(TokenAndPositionEmbedding, self).__init__(**kwargs)
         self.token_emb = layers.Embedding(input_dim=vocab_size, output_dim=embed_dim)
         self.pos_emb = layers.Embedding(input_dim=maxlen, output_dim=embed_dim)
 
