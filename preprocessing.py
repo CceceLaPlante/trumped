@@ -23,9 +23,12 @@ def load_data () :
 
     
     return tweets
-    
+
+def is_ascii(s):
+    return all(ord(c) < 128 for c in s)
+
 def word_or_unknown (word,word_freq,freq=3) : 
-    if word_freq[word] > freq : 
+    if word_freq[word] > freq or is_ascii(word) : 
         return word
     else :
         return "<UNK>"
@@ -137,7 +140,7 @@ def getdataset(validation_split=0.2 ,user_max_size = None,vocab_size_minus1=700,
     return train_data, val_data, tokenizer, max_size, tokenizer.get_vocab_size()
         
 if __name__ == "__main__" :
-    train_data, val_data, tokenizer, max_size, vocab_size = getdataset(vocab_size_minus1=150,freq=10)
+    train_data, val_data, tokenizer, max_size, vocab_size = getdataset(vocab_size_minus1=200,freq=20)
     print(train_data[0])
     
     print( tokenizer.decode(train_data[0], skip_special_tokens=False) )

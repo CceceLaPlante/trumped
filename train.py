@@ -16,7 +16,7 @@ def train() :
 
     os.environ["KERAS_BACKEND"] = "tensorflow"
 
-    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=200, user_max_size=200,freq=10)
+    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=200, user_max_size=200,freq=20)
 
     tokenizer.save("tokenizer.json")
 
