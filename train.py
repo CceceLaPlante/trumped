@@ -9,15 +9,18 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
+from keras.losses import categorical_crossentropy
+
+
 def train() :
 
     os.environ["KERAS_BACKEND"] = "tensorflow"
 
     train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=200, user_max_size=200,freq=10)
 
+    tokenizer.save("tokenizer.json")
 
-
-    X_train = tf.convert_to_tensor(train_data)
+    X_train = tf.convert_to_tensor(train_data)  
     Y_train = np.zeros(X_train.shape).astype(int)
     Y_train[:, 0:-1] = np.array(X_train[:, 1:])
     Y_train = tf.convert_to_tensor(Y_train)
@@ -28,11 +31,11 @@ def train() :
     Y_val = tf.convert_to_tensor(Y_val)
 
 
-    EMBED_DIM = 32
+    EMBED_DIM = 128
     NUM_HEADS = 4
-    NUM_BLOCS = 8
-    hidden_dim = 256
-    BATCH_SIZE = 128
+    NUM_BLOCS = 7
+    hidden_dim = 128
+    BATCH_SIZE = 64
 
     data_train = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
     data_train = data_train.shuffle(buffer_size=1024).batch(BATCH_SIZE)
@@ -47,12 +50,16 @@ def train() :
     model.summary()
 
 
+
+    def scce_with_ls(y, y_hat):
+        y = tf.one_hot(tf.cast(y, tf.int32), vocab_size)
+        return categorical_crossentropy(y, y_hat, label_smoothing = 0.1)
+
     # Specify the learning rate here
     learning_rate = 0.001  # Reduced learning rate
-    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, clipnorm=1.0)  # Add gradient clipping
-
+    optimizer = tf.keras.optimizers.AdamW(learning_rate=learning_rate, clipnorm=1.0)  # Add gradient clipping
     model.compile(optimizer=optimizer,
-                loss="sparse_categorical_crossentropy",
+                loss=scce_with_ls,
                 metrics=["sparse_categorical_accuracy"])
 
 
@@ -73,7 +80,7 @@ def train() :
 
         while not exit:
             output = model.predict(input, verbose=0)
-            input[0, nb_iter] = argmax_with_temp(output[0, nb_iter - 1], temperature=0.99)
+            input[0, nb_iter] = argmax_with_temp(output[0, nb_iter - 1], temperature=0.8)
             #input[0, nb_iter] = np.argmax(output[0, nb_iter - 1])
             nb_iter += 1
             if nb_iter == max_iter:
@@ -93,12 +100,7 @@ def train() :
         historic_accuracy.extend(history.history["val_sparse_categorical_accuracy"])
         generate_tweet(model,tokenizer)
 
-        model.save("model.keras")
-
-        print("q to quit, else continue")
-
-        if input() == "q":
-            break
+        model.save("model_"+str(EMBED_DIM)+"_"+str(NUM_HEADS)+"_"+str(NUM_BLOCS)+"_"+str(hidden_dim)+"_"+str(vocab_size)+"_"+".keras")
 
     plt.plot(np.array(historic_accuracy).flatten())
     plt.show()
