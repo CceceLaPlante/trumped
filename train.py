@@ -49,17 +49,11 @@ def train() :
     model = make_model(MAX_LEN, vocab_size, EMBED_DIM, NUM_HEADS, NUM_BLOCS, hidden_dim)
     model.summary()
 
-
-
-    def scce_with_ls(y, y_hat):
-        y = tf.one_hot(tf.cast(y, tf.int32), vocab_size)
-        return categorical_crossentropy(y, y_hat, label_smoothing = 0.1)
-
     # Specify the learning rate here
     learning_rate = 0.001  # Reduced learning rate
     optimizer = tf.keras.optimizers.AdamW(learning_rate=learning_rate, clipnorm=1.0)  # Add gradient clipping
     model.compile(optimizer=optimizer,
-                loss=scce_with_ls,
+                loss="sparse_categorical_crossentropy",
                 metrics=["sparse_categorical_accuracy"])
 
 
@@ -75,12 +69,12 @@ def train() :
         
         input = np.array([[0] * MAX_LEN])
         exit = False
-        nb_iter =  2
+        nb_iter =  1
         max_iter = MAX_LEN
 
         while not exit:
             output = model.predict(input, verbose=0)
-            input[0, nb_iter] = argmax_with_temp(output[0, nb_iter - 1], temperature=0.8)
+            input[0, nb_iter] = argmax_with_temp(output[0, nb_iter - 1], temperature=0.7)
             #input[0, nb_iter] = np.argmax(output[0, nb_iter - 1])
             nb_iter += 1
             if nb_iter == max_iter:
@@ -96,11 +90,11 @@ def train() :
     for i in range(10):
         #generate_tweet(model, table)
         print("=========EPOCH " + str(i) + "==========")
-        history = model.fit(data_train, epochs=10, verbose=1, validation_data=data_val, callbacks=[ learning_rate_scheduler])
+        history = model.fit(data_train, epochs=20, verbose=1, validation_data=data_val, callbacks=[ learning_rate_scheduler])
         historic_accuracy.extend(history.history["val_sparse_categorical_accuracy"])
         generate_tweet(model,tokenizer)
 
-        model.save("model_"+str(EMBED_DIM)+"_"+str(NUM_HEADS)+"_"+str(NUM_BLOCS)+"_"+str(hidden_dim)+"_"+str(vocab_size)+"_"+".keras")
+        model.save("model_"+str(EMBED_DIM)+"_"+str(NUM_HEADS)+"_"+str(NUM_BLOCS)+"_"+str(hidden_dim)+"_"+str(vocab_size)+"_"+str(MAX_LEN)+".h5")
 
     plt.plot(np.array(historic_accuracy).flatten())
     plt.show()

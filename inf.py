@@ -57,6 +57,6 @@ def generate_tweet(model,tokenizer,temp=0.99,nb_tweets=100):
 tokenizer = Tokenizer.from_file("tokenizer.json")
 vs = tokenizer.get_vocab_size()
 
-model =  tf.keras.models.load_model("/home/celeste/trump_gen/trumped/model_256_4_6_256_231_200.h5", custom_objects={"TokenAndPositionEmbedding": TokenAndPositionEmbedding, "TransformerBlock": TransformerBlock})
+model =  tf.keras.models.load_model("/home/celeste/trump_gen/trumped_paskassé/trumped/model_256_4_6_256_231_200.h5", custom_objects={"TokenAndPositionEmbedding": TokenAndPositionEmbedding, "TransformerBlock": TransformerBlock})
 
 generate_tweet(model,tokenizer,0.8)
