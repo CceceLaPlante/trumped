@@ -10,12 +10,14 @@ from blocs import TokenAndPositionEmbedding, TransformerBlock
 
 from tokenizers import Tokenizer
 
-MAX_LEN=200
+MAX_LEN=100
 
 
 import matplotlib.pyplot as plt
 
 def argmax_with_temp(array, temperature=1.0):
+    zeros = np.where(array == 0)
+    array[zeros] = 1e-10
     array = np.log(array) / temperature
     array = np.exp(array)
     s = np.sum(array,axis = -1)
@@ -57,6 +59,6 @@ def generate_tweet(model,tokenizer,temp=0.99,nb_tweets=100):
 tokenizer = Tokenizer.from_file("tokenizer.json")
 vs = tokenizer.get_vocab_size()
 
-model =  tf.keras.models.load_model("/home/celeste/trump_gen/trumped_paskassé/trumped/model_256_4_6_256_231_200.h5", custom_objects={"TokenAndPositionEmbedding": TokenAndPositionEmbedding, "TransformerBlock": TransformerBlock})
+model =  tf.keras.models.load_model("/home/celeste/trump_gen/trumped_paskassé/trumped/model_256_3_2_256_204_100.h5", custom_objects={"TokenAndPositionEmbedding": TokenAndPositionEmbedding, "TransformerBlock": TransformerBlock})
 
 generate_tweet(model,tokenizer,0.8)

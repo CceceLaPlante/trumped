@@ -11,14 +11,18 @@ import matplotlib.pyplot as plt
 
 from keras.losses import categorical_crossentropy
 
+from keras.utils import plot_model
+
+from keras.callbacks import TensorBoard
+
 
 def train() :
 
     os.environ["KERAS_BACKEND"] = "tensorflow"
-
-    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=200, user_max_size=200,freq=10)
+    train_data, val_data, tokenizer, MAX_LEN, vocab_size = getdataset(vocab_size_minus1=200, user_max_size=100,freq=10)
 
     tokenizer.save("tokenizer.json")
+    print("saved tokenizer")
 
     X_train = tf.convert_to_tensor(train_data)  
     Y_train = np.zeros(X_train.shape).astype(int)
@@ -31,11 +35,11 @@ def train() :
     Y_val = tf.convert_to_tensor(Y_val)
 
 
-    EMBED_DIM = 128
-    NUM_HEADS = 4
-    NUM_BLOCS = 7
-    hidden_dim = 128
-    BATCH_SIZE = 64
+    EMBED_DIM = 256
+    NUM_HEADS = 3
+    NUM_BLOCS = 2
+    hidden_dim = 256
+    BATCH_SIZE = 128
 
     data_train = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
     data_train = data_train.shuffle(buffer_size=1024).batch(BATCH_SIZE)
@@ -54,7 +58,12 @@ def train() :
     optimizer = tf.keras.optimizers.AdamW(learning_rate=learning_rate, clipnorm=1.0)  # Add gradient clipping
     model.compile(optimizer=optimizer,
                 loss="sparse_categorical_crossentropy",
-                metrics=["sparse_categorical_accuracy"])
+                metrics=["sparse_categorical_accuracy", "sparse_categorical_crossentropy"])
+    
+    
+
+    
+    plot_model(model, to_file='model_img.png', show_shapes=True, show_layer_names=True,dpi=100,expand_nested=True)
 
 
     def argmax_with_temp(array, temperature=1.0):
@@ -84,13 +93,16 @@ def train() :
         print(tokenizer.decode(input[0], skip_special_tokens=False) )
         print("--------------------")
 
-    # Add early stopping and learning rate scheduler
+    # callbacks
+    tensorboard_callback = TensorBoard(log_dir="logs")
     learning_rate_scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=4, verbose=1)
+    
+    
     historic_accuracy = []
-    for i in range(10):
+    for i in range(2):
         #generate_tweet(model, table)
         print("=========EPOCH " + str(i) + "==========")
-        history = model.fit(data_train, epochs=20, verbose=1, validation_data=data_val, callbacks=[ learning_rate_scheduler])
+        history = model.fit(data_train, epochs=30, verbose=1, validation_data=data_val, callbacks=[ learning_rate_scheduler, tensorboard_callback])
         historic_accuracy.extend(history.history["val_sparse_categorical_accuracy"])
         generate_tweet(model,tokenizer)
 

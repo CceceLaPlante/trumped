@@ -27,11 +27,32 @@ def load_data () :
 def is_ascii(s):
     return all(ord(c) < 128 for c in s)
 
+def isurl (word) : 
+    if word.startswith("http") or word.startswith("www") :
+        return True
+    else :
+        return False
+
+def word_or_token (word_before,word) : 
+    if isurl(word) : 
+        return "<URL>"
+    elif word.startswith("@") and len(word) > 1 :
+        return "<USER>"
+    elif word.startswith("#") and len(word) > 1 :
+        return "<HASHTAG>"
+    elif word_before == "@" :
+        return "<USER>"
+    elif word_before == "#" :
+        return "<HASHTAG>"
+    else :
+        return word        
+
 def word_or_unknown (word,word_freq,freq=3) : 
     if word_freq[word] > freq or is_ascii(word) : 
         return word
     else :
         return "<UNK>"
+    
     
 def remove_non_freq_words (tweets, freq=3) : 
     word_freq = {" ":freq+1}
@@ -47,7 +68,7 @@ def remove_non_freq_words (tweets, freq=3) :
     return tweets
 
 def preprocess_tweet(tweet) : 
-    filter = '#%*+/;=[\\]^_`{|}~\t\n^*§¨`~'
+    filter = '@#%*+/;=[\\]^_`{|}~\t\n^*§¨`~'
     tweet = tweet.lower()
     
     new_tweet = ""
@@ -61,7 +82,15 @@ def preprocess_tweet(tweet) :
     
     
 def getdataset(validation_split=0.2 ,user_max_size = None,vocab_size_minus1=700,freq=3) :
-    tweets = remove_non_freq_words(load_data(), freq=freq)
+    tweets_no_token = remove_non_freq_words(load_data(), freq=freq)
+    tweets = []
+    for tweet in tweets_no_token:
+        words = tweet.split(" ")
+        new_tweet = words[0]+" "
+        for i in range(1,len(words)):
+            new_tweet += word_or_token(words[i-1],words[i]) + " "
+        tweets.append(new_tweet)
+    
     preprocessed_tweet = [preprocess_tweet(tweet) for tweet in tweets]
     
     print("nb chars : ")
@@ -83,7 +112,7 @@ def getdataset(validation_split=0.2 ,user_max_size = None,vocab_size_minus1=700,
         )
     
     tokenizer.train_from_iterator(preprocessed_tweet,trainer=trainer)
-    tokenizer.add_tokens([" "])
+    tokenizer.add_tokens([" ", "<URL>", "<USER>", "<HASHTAG>"])
     
     #print(tokenizer.encode(tweets[0]+"<EOS>").ids)
     
